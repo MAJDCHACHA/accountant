@@ -22,7 +22,7 @@
     "target": "ES6",
     "module": "commonjs",
     "rootDir": "src",
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "outDir": "dist",
     "removeComments": true,
     "esModuleInterop": true,
