@@ -7,7 +7,6 @@
     "dev": "nodemon",
     "build": "tsc",
     "start": "node start.js"
-
   },
   "keywords": [],
   "author": "",

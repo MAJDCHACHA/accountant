@@ -1,2 +1,7 @@
-require('tsconfig-paths/register');
+require('tsconfig-paths').register({
+  baseUrl: './dist',
+  paths: {
+    "@/*": ["*"]
+  }
+});
 require('./dist/server.js');
