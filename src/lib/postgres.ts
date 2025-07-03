@@ -17,7 +17,7 @@ export const AppDataSource = new DataSource({
   synchronize: true, // استخدم false في الإنتاج
   logging: false,
   entities: [User, Account, JournalEntry, JournalDetails,AccountRelation],
- ..
+
 });
 
 export const connectToDatabase = async (): Promise<void> => {

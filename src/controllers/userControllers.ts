@@ -4,7 +4,7 @@ import { AppDataSource } from '../lib/postgres';
 import { User } from '../entities/userModel';
 import { generateAccessToken, generateRefreshToken } from '../lib/jwt';
 import config from '../config/index';
-import { messages } from '../utils/message';
+import { messages } from '@/utils/message';
 import { UserData, LoginData, RefreshTokenData, } from '../types/userType';
 import { seedAccountTreeIfEmpty } from "../utils/accountSeeder";
 const register = async (req: Request, res: Response): Promise<void> => {
@@ -26,7 +26,7 @@ const register = async (req: Request, res: Response): Promise<void> => {
     const refreshToken = generateRefreshToken(createUser.id);
 
     createUser.refreshToken = refreshToken;
-    await ...save(createUser);
+    await userRepository.save(createUser);
 
     res.status(201).json({ message: 'register', user: createUser, accessToken });
   } catch (err) {
