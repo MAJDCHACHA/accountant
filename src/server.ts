@@ -2,14 +2,14 @@ import express from 'express';
 import cors from "cors";
 import helmet from 'helmet';
 import compression from 'compression';
-import config from '@/config';
-import corsOptions from '@/config/corsOptions';
-import limiter from '@/lib/rateLimit';
-import {connectToDatabase,disconnectFromDataBase} from '@/lib/postgres'
-import {logger} from '@/lib/winston';
-import userRoutes from '@/routes/userRoutes';
-import accountTreeRoutes from '@/routes/accountTreeRoutes';
-import journalRoutes from '@/routes/journalRoutes';
+import config from './config';
+import corsOptions from './config/corsOptions';
+import limiter from './lib/rateLimit';
+import {connectToDatabase,disconnectFromDataBase} from './lib/postgres'
+import {logger} from './lib/winston';
+import userRoutes from './routes/userRoutes';
+import accountTreeRoutes from './routes/accountTreeRoutes';
+import journalRoutes from './routes/journalRoutes';
 const app=express();
 app.use(express.json());
 app.use(cors(corsOptions));

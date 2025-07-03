@@ -6,8 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { Account } from "@/entities/accountTree";
-import { JournalEntry } from "@/entities/JournalEntry";
+import { Account } from "../entities/accountTree";
+import { JournalEntry } from "../entities/JournalEntry";
 
 @Entity()
 export class User {

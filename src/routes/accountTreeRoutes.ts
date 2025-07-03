@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { verifyAccessToken } from '@/middleware/verify'; // المسار حسب مشروعك
-import accountTreeControllers from '@/controllers/accountTreeControllers';
+import { verifyAccessToken } from '../middleware/verify'; // المسار حسب مشروعك
+import accountTreeControllers from '../controllers/accountTreeControllers';
 const router=Router();
 router.get('/accountTree', accountTreeControllers.getAccountTree);
 router.get('/finalAccount',accountTreeControllers.getFinalAccount);

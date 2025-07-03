@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
-import { AppDataSource } from '@/lib/postgres';
-import { User } from '@/entities/userModel';
-import { generateAccessToken, generateRefreshToken } from '@/lib/jwt';
-import config from '@/config/index';
-import { messages } from '@/utils/message';
-import { UserData, LoginData, RefreshTokenData, } from '@/types/userType';
-import { seedAccountTreeIfEmpty } from "@/utils/accountSeeder";
+import { AppDataSource } from '../lib/postgres';
+import { User } from '../entities/userModel';
+import { generateAccessToken, generateRefreshToken } from '../lib/jwt';
+import config from '../config/index';
+import { messages } from '../utils/message';
+import { UserData, LoginData, RefreshTokenData, } from '../types/userType';
+import { seedAccountTreeIfEmpty } from "../utils/accountSeeder";
 const register = async (req: Request, res: Response): Promise<void> => {
   const { username, email, password, role } = req.body as UserData;
   const userRepository = AppDataSource.getRepository(User);
@@ -26,7 +26,7 @@ const register = async (req: Request, res: Response): Promise<void> => {
     const refreshToken = generateRefreshToken(createUser.id);
 
     createUser.refreshToken = refreshToken;
-    await userRepository.save(createUser);
+    await ...save(createUser);
 
     res.status(201).json({ message: 'register', user: createUser, accessToken });
   } catch (err) {

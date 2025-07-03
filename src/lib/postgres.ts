@@ -1,12 +1,12 @@
 // src/lib/postgres.ts
 import { DataSource } from "typeorm";
-import { logger } from "@/lib/winston";
-import config from "@/config";
-import { User } from "@/entities/userModel";
-import { Account } from "@/entities/accountTree";
-import { JournalEntry } from "@/entities/JournalEntry";
-import { JournalDetails } from "@/entities/JournalDetails";
-import { AccountRelation } from "@/entities/accountDetails";
+import { logger } from "../lib/winston";
+import config from "../config";
+import { User } from "../entities/userModel";
+import { Account } from "../entities/accountTree";
+import { JournalEntry } from "../entities/JournalEntry";
+import { JournalDetails } from "../entities/JournalDetails";
+import { AccountRelation } from "../entities/accountDetails";
 export const AppDataSource = new DataSource({
   type: "postgres",
   host: config.DB_HOST,
@@ -17,11 +17,7 @@ export const AppDataSource = new DataSource({
   synchronize: true, // استخدم false في الإنتاج
   logging: false,
   entities: [User, Account, JournalEntry, JournalDetails,AccountRelation],
-  extra: {
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  },
+ ..
 });
 
 export const connectToDatabase = async (): Promise<void> => {

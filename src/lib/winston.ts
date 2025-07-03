@@ -1,4 +1,4 @@
-import config from "@/config";
+import config from "../config";
 import winston, { level } from 'winston';
 const {combine,timestamp,json,errors,align,printf,colorize}=winston.format;
 const transports:winston.transport[]=[];

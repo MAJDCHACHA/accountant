@@ -8,8 +8,8 @@ import {
   OneToMany,
 
 } from "typeorm";
-import { User } from "@/entities/userModel";
-import { JournalDetails } from "@/entities/JournalDetails";
+import { User } from "../entities/userModel";
+import { JournalDetails } from "../entities/JournalDetails";
 
 
 @Entity()

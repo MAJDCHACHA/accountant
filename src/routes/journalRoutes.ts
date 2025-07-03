@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { verifyAccessToken } from '@/middleware/verify'; // المسار حسب مشروعك
-import journalControllers from '@/controllers/journalControllers'
+import { verifyAccessToken } from '../middleware/verify'; // المسار حسب مشروعك
+import journalControllers from '../controllers/journalControllers'
 const router=Router();
 router.get("/getJournal",journalControllers.getJournal);
 router.get("/getById/:id",journalControllers.getJournal)

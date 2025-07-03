@@ -4,8 +4,8 @@ import {
   Column,
   ManyToOne,
 } from "typeorm";
-import { JournalEntry } from "@/entities/JournalEntry";
-import { Account } from "@/entities/accountTree";
+import { JournalEntry } from "../entities/JournalEntry";
+import { Account } from "../entities/accountTree";
 
 @Entity()
 export class JournalDetails {

@@ -1,6 +1,6 @@
-import { AppDataSource } from "@/lib/postgres";
-import { Account } from "@/entities/accountTree";
-import { AccountRelation } from "@/entities/accountDetails";
+import { AppDataSource } from "../lib/postgres";
+import { Account } from "../entities/accountTree";
+import { AccountRelation } from "../entities/accountDetails";
 import { Repository } from "typeorm";
 
 export const accountTree = [

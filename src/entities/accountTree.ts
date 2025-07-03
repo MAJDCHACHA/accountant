@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { User } from "@/entities/userModel";
+import { User } from "../entities/userModel";
 @Entity()
 export class Account {
   @PrimaryGeneratedColumn()

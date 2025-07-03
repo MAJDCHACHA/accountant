@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { statusCodes } from '@/utils/statusCode';
-import { messages } from '@/utils/message';
-import { Account } from "@/entities/accountTree"
-import { AccountRelation } from '@/entities/accountDetails';
-import { User } from '@/entities/userModel';
-import { AppDataSource } from '@/lib/postgres';
+import { statusCodes } from '../utils/statusCode';
+import { messages } from '../utils/message';
+import { Account } from "../entities/accountTree"
+import { AccountRelation } from '../entities/accountDetails';
+import { User } from '../entities/userModel';
+import { AppDataSource } from '../lib/postgres';
 type AccountNode = {
   id: number;
   name: string;

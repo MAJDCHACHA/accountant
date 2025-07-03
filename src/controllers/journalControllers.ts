@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { AppDataSource } from '@/lib/postgres';
-import { JournalEntry } from "@/entities/JournalEntry";
-import { JournalDetails } from "@/entities/JournalDetails";
-import { User } from '@/entities/userModel';
-import { Account } from "@/entities/accountTree";
+import { AppDataSource } from '../lib/postgres';
+import { JournalEntry } from "../entities/JournalEntry";
+import { JournalDetails } from "../entities/JournalDetails";
+import { User } from '../entities/userModel';
+import { Account } from "../entities/accountTree";
 type Journal = {
   id?: number;
   date: string;

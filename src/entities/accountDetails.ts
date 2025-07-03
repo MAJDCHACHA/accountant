@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
-import { Account } from "@/entities/accountTree";
+import { Account } from "../entities/accountTree";
 @Entity()
 export class AccountRelation {
   @PrimaryGeneratedColumn()

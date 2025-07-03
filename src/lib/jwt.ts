@@ -14,7 +14,7 @@
 //     })
 // };
 import jwt from 'jsonwebtoken';
-import config from '@/config';
+import config from '../config';
 
 // الآن userId ممكن يكون string أو number حسب تعريف الـ id في PostgreSQL
 export const generateAccessToken = (userId: string | number): string => {
