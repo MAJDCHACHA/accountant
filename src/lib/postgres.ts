@@ -7,6 +7,8 @@ import { Account } from "../entities/accountTree";
 import { JournalEntry } from "../entities/JournalEntry";
 import { JournalDetails } from "../entities/JournalDetails";
 import { AccountRelation } from "../entities/accountDetails";
+import { CompanyName } from "../entities/companyName";
+import { Product } from "../entities/product";
 export const AppDataSource = new DataSource({
   type: "postgres",
   host: config.DB_HOST,
@@ -16,12 +18,12 @@ export const AppDataSource = new DataSource({
   database: config.DB_NAME,
   synchronize: true, // استخدم false في الإنتاج
   logging: false,
-  entities: [User, Account, JournalEntry, JournalDetails,AccountRelation],
-  extra: {
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  },
+  entities: [User, Account, JournalEntry, JournalDetails,AccountRelation,Product,CompanyName],
+  // extra: {
+  //   ssl: {
+  //     rejectUnauthorized: false,
+  //   },
+  // },
 });
 
 export const connectToDatabase = async (): Promise<void> => {

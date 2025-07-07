@@ -10,6 +10,9 @@ import {logger} from './lib/winston';
 import userRoutes from './routes/userRoutes';
 import accountTreeRoutes from './routes/accountTreeRoutes';
 import journalRoutes from './routes/journalRoutes';
+import productRoutes from './routes/productRoutes'
+import companyRoutes from './routes/companyRoutes'
+import invoiceRoutes from './routes/invoiceRoutes'
 const app=express();
 app.use(express.json());
 app.use(cors(corsOptions));
@@ -23,6 +26,9 @@ app.use(limiter);
     app.use("/user",userRoutes);
     app.use('/account',accountTreeRoutes);
     app.use('/journal',journalRoutes);
+    app.use('/company',companyRoutes);
+    app.use('/product',productRoutes);
+    app.use('/invoice',invoiceRoutes);
     try{
 app.get("/",(req,res)=>{{
     res.json({message:`hello world`})
