@@ -3,9 +3,10 @@ export type UserData = {
   email: string;
   password: string;
   role: 'admin' | 'user';
+  refreshToken: string;
 };
 export type LoginData = {
-  email: string;
+  username: string;
   password: string;
 };
 export type RefreshTokenData = {

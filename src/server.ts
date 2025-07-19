@@ -13,6 +13,7 @@ import journalRoutes from './routes/journalRoutes';
 import productRoutes from './routes/productRoutes'
 import companyRoutes from './routes/companyRoutes'
 import invoiceRoutes from './routes/invoiceRoutes'
+import branchRoutes from './routes/branchRoutes';
 const app=express();
 app.use(express.json());
 app.use(cors(corsOptions));
@@ -29,6 +30,7 @@ app.use(limiter);
     app.use('/company',companyRoutes);
     app.use('/product',productRoutes);
     app.use('/invoice',invoiceRoutes);
+    app.use('/branch',branchRoutes);
     try{
 app.get("/",(req,res)=>{{
     res.json({message:`hello world`})

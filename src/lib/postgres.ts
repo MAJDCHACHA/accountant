@@ -5,10 +5,15 @@ import config from "../config";
 import { User } from "../entities/userModel";
 import { Account } from "../entities/accountTree";
 import { JournalEntry } from "../entities/JournalEntry";
-import { JournalDetails } from "../entities/JournalDetails";
+import { JournalEntryDetail } from "../entities/JournalDetails";
 import { AccountRelation } from "../entities/accountDetails";
 import { CompanyName } from "../entities/companyName";
 import { Product } from "../entities/product";
+import { ProductDetails } from "../entities/productDetails";
+import { Invoice } from "../entities/invoice";
+import { InvoiceDetails } from "../entities/invoiceDetails";
+import { Branch } from "../entities/branch";
+import {AccountFinalParent} from '../entities/accountFinalParent';
 export const AppDataSource = new DataSource({
   type: "postgres",
   host: config.DB_HOST,
@@ -18,12 +23,12 @@ export const AppDataSource = new DataSource({
   database: config.DB_NAME,
   synchronize: true, // استخدم false في الإنتاج
   logging: false,
-  entities: [User, Account, JournalEntry, JournalDetails,AccountRelation,Product,CompanyName],
-  extra: {
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  },
+  entities: [Branch,User, Account, JournalEntry, JournalEntryDetail,AccountRelation,Product,ProductDetails,CompanyName,Invoice,InvoiceDetails,AccountFinalParent],
+  // extra: {
+  //   ssl: {
+  //     rejectUnauthorized: false,
+  //   },
+  // },
 });
 
 export const connectToDatabase = async (): Promise<void> => {

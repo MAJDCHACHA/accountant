@@ -1,8 +1,7 @@
-import { AppDataSource } from "../lib/postgres";
 import { Account } from "../entities/accountTree";
 import { AccountRelation } from "../entities/accountDetails";
-import { Repository } from "typeorm";
-
+import { AccountFinalParent } from "../entities/accountFinalParent";
+import { AppDataSource } from "../lib/postgres";
 export const accountTree = [
   {
     name: "الموجودات",
@@ -286,70 +285,6 @@ export const accountTree = [
     isParent:true,
   },
 ];
-
-
-// type AccountNode = {
-//   name: string;
-//   name_en?: string;
-//   accountType?: string;
-//   isConfig?: boolean;
-//   isParent?:boolean
-//   final_account?:boolean;
-//   children?: AccountNode[];
-// };
-// async function insertTree(
-//   parent: Account | null,
-//   node: AccountNode,
-//   accountRepo: Repository<Account>,
-//   relationRepo: Repository<AccountRelation>,
-//   userId: number
-// ): Promise<void> {
-//   // ننشئ حساب جديد مع ربطه بالمستخدم userId
-// const account = accountRepo.create({
-//   name: node.name,
-//   name_en: node.name_en,
-//   accountType: node.accountType,
-//   isConfig: node.isConfig ?? false,
-//   final_account:node.final_account??false,
-//   isParent:node.isParent??false,
-//   userId: { id: userId },
-// });
-//   await accountRepo.save(account);
-
-//   // إذا كان هناك أب parent، ننشئ العلاقة
-//   if (parent) {
-//     const relation = relationRepo.create({ parent, child: account });
-//     await relationRepo.save(relation);
-//   }
-
-//   // إذا هناك أبناء children، نكرر العملية عليهم
-//   if (node.children && node.children.length > 0) {
-//     for (const child of node.children) {
-//       await insertTree(account, child, accountRepo, relationRepo, userId);
-//     }
-//   }
-// }
-
-// export async function seedAccountTreeIfEmpty(userId: number): Promise<void> {
-//   const dataSource = AppDataSource.isInitialized
-//     ? AppDataSource
-//     : await AppDataSource.initialize();
-
-//   const accountRepo = dataSource.getRepository(Account);
-//   const relationRepo = dataSource.getRepository(AccountRelation);
-
-//   const count = await accountRepo.count();
-//   if (count > 0) {
-//     console.log("✅ شجرة الحسابات موجودة بالفعل، لا حاجة لإعادة إنشائها.");
-//     return;
-//   }
-
-//   for (const rootNode of accountTree) {
-//     await insertTree(null, rootNode, accountRepo, relationRepo, userId);
-//   }
-
-//   console.log("✅ تم إنشاء شجرة الحسابات بنجاح!");
-// }
 type AccountNode = {
   name: string;
   name_en?: string;
@@ -358,210 +293,128 @@ type AccountNode = {
   isParent?: boolean;
   final_account?: boolean;
   children?: AccountNode[];
+
 };
-
-// async function insertTree(
-//   parent: Account | null,
-//   node: AccountNode,
-//   accountRepo: Repository<Account>,
-//   relationRepo: Repository<AccountRelation>,
-//   userId: number,
-//   finalAccounts?: Record<string, Account> // خرائط للحسابات الختامية
-// ): Promise<Account> { // نغير نوع الإرجاع ليكون Account
-//   const account = accountRepo.create({
-//     name: node.name,
-//     name_en: node.name_en,
-//     accountType: node.accountType,
-//     isConfig: node.isConfig ?? false,
-//     final_account: node.final_account ?? false,
-//     isParent: node.isParent ?? false,
-//     userId: { id: userId },
-//     parentFinalAccount: null // نبدأ بقيمة null
-//   });
-
-//   await accountRepo.save(account);
-
-//   // إذا كان هناك أب parent، ننشئ العلاقة العادية
-//   if (parent) {
-//     const relation = relationRepo.create({ parent, child: account });
-//     await relationRepo.save(relation);
-//   }
-
-//   // ربط الحساب بالحساب الختامي المناسب (إذا كان حساب عادي وليس ختامي)
-//   if (!node.final_account && finalAccounts) {
-//     let finalAccount: Account | undefined;
-
-//     // تحديد الحساب الختامي حسب نوع الحساب
-//     switch(node.accountType) {
-//       case 'asset':
-//       case 'liability':
-//       case 'Inventory':
-//         finalAccount = finalAccounts['الميزانية'];
-//         break;
-//       case 'expense':
-//       case 'revenue':
-//       case 'NetPurchases':
-//       case 'NetSales':
-//         finalAccount = finalAccounts['الأرباح والخسائر'];
-//         break;
-//     }
-
-//     if (finalAccount) {
-//       account.parentFinalAccount = finalAccount;
-//       await accountRepo.save(account);
-//     }
-//   }
-
-//   // معالجة الأبناء
-//   if (node.children && node.children.length > 0) {
-//     for (const child of node.children) {
-//       await insertTree(account, child, accountRepo, relationRepo, userId, finalAccounts);
-//     }
-//   }
-
-//   return account; // نعيد الحساب الذي تم إنشاؤه
-// }
-
-// export async function seedAccountTreeIfEmpty(userId: number): Promise<void> {
-//   const dataSource = AppDataSource.isInitialized
-//     ? AppDataSource
-//     : await AppDataSource.initialize();
-
-//   const accountRepo = dataSource.getRepository(Account);
-//   const relationRepo = dataSource.getRepository(AccountRelation);
-
-//   const count = await accountRepo.count();
-//   if (count > 0) {
-//     console.log("✅ شجرة الحسابات موجودة بالفعل، لا حاجة لإعادة إنشائها.");
-//     return;
-//   }
-
-//   // أولاً: إنشاء الحسابات الختامية وتخزينها
-//   const finalAccounts: Record<string, Account> = {};
-  
-//   // إنشاء الحسابات الختامية أولاً
-//   const finalAccountNodes = accountTree.filter(node => node.final_account);
-//   for (const node of finalAccountNodes) {
-//     const account = await insertTree(null, node, accountRepo, relationRepo, userId);
-//     finalAccounts[node.name] = account;
-//   }
-
-//   // ثانياً: إنشاء باقي الحسابات مع الربط بالحسابات الختامية
-//   const normalAccountNodes = accountTree.filter(node => !node.final_account);
-//   for (const node of normalAccountNodes) {
-//     await insertTree(null, node, accountRepo, relationRepo, userId, finalAccounts);
-//   }
-
-//   console.log("✅ تم إنشاء شجرة الحسابات بنجاح مع ربط الحسابات الختامية!");
-// }
-async function insertTree(
-  parent: Account | null,
-  node: AccountNode,
-  accountRepo: Repository<Account>,
-  relationRepo: Repository<AccountRelation>,
+export default async function seedAccountTreeIfEmpty(
   userId: number,
-  finalAccounts?: Record<string, Account>
-): Promise<Account> {
-  const account = accountRepo.create({
-    name: node.name,
-    name_en: node.name_en,
-    accountType: node.accountType,
-    isConfig: node.isConfig ?? false,
-    final_account: node.final_account ?? false,
-    isParent: node.isParent ?? false,
-    userId: { id: userId },
-    parentFinalAccount: null
-  });
+  branchId:number
+): Promise<void> {
+  // التحقق من وجود حسابات لهذا المستخدم
+  const accountRepo=AppDataSource.getRepository(Account);
+  const relationRepo=AppDataSource.getRepository(AccountRelation);
+  const finalParentRepo=AppDataSource.getRepository(AccountFinalParent);
+  // إنشاء معاملة لضمان سلامة البيانات
+  const queryRunner = accountRepo.manager.connection.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
 
-  await accountRepo.save(account);
+  try {
+    const finalAccounts: Record<string, Account> = {};
 
-  if (parent) {
-    const relation = relationRepo.create({ parent, child: account });
-    await relationRepo.save(relation);
-  }
-
-  if (!node.final_account && finalAccounts) {
-    let finalAccount: Account | undefined;
-
-    switch(node.accountType) {
-      case 'asset':
-      case 'liability':
-      case 'Inventory':
-        finalAccount = finalAccounts['الميزانية'];
-        break;
-      case 'expense':
-      case 'revenue':
-        finalAccount = finalAccounts['الأرباح والخسائر'];
-        break;
-      case 'NetPurchases':
-      case 'NetSales':
-        finalAccount = finalAccounts['المتاجرة'];
-        break;
+    // 1. إنشاء الحسابات النهائية أولاً
+    for (const node of accountTree) {
+      if (node.final_account) {
+        const account = accountRepo.create({
+          name: node.name,
+          name_en: node.name_en,
+          accountType: node.accountType,
+          isConfig: node.isConfig ?? false,
+          final_account: true,
+          isParent: node.isParent ?? false,
+          userId:userId,
+          branchId:branchId
+        });
+        await queryRunner.manager.save(account);
+        finalAccounts[node.name] = account;
+      }
     }
 
-    if (finalAccount) {
-      await accountRepo.update(account.id, { parentFinalAccount: finalAccount });
-      account.parentFinalAccount = finalAccount;
+    // 2. إنشاء باقي الحسابات مع علاقاتها
+    async function processNode(parentId: number | null, node: AccountNode): Promise<Account> {
+      if (node.final_account) {
+        return finalAccounts[node.name];
+      }
+
+      const account = accountRepo.create({
+        name: node.name,
+        name_en: node.name_en,
+        accountType: node.accountType,
+        isConfig: node.isConfig ?? false,
+        final_account: false,
+        isParent: node.isParent ?? (node.children && node.children.length > 0),
+        userId,
+        branchId
+      });
+
+      await queryRunner.manager.save(account);
+
+      // ربط الحساب بأبيه إذا كان موجوداً
+      if (parentId !== null) {
+        const relation = relationRepo.create({
+          parentId: parentId,
+          childId: account.id
+        });
+        await queryRunner.manager.save(relation);
+      }
+
+      // تحديد الحساب الختامي المناسب
+      let finalAccount: Account | undefined;
+      switch (node.accountType) {
+        case 'asset':
+        case 'liability':
+        case 'Inventory':
+          finalAccount = finalAccounts['الميزانية'];
+          break;
+        case 'expense':
+        case 'revenue':
+          finalAccount = finalAccounts['الأرباح والخسائر'];
+          break;
+        case 'NetPurchases':
+        case 'NetSales':
+          finalAccount = finalAccounts['المتاجرة'];
+          break;
+        case 'operating':
+          finalAccount = finalAccounts['التشغيل'];
+          break;
+      }
+
+      // ربط الحساب بحسابه الختامي
+      if (finalAccount) {
+        await queryRunner.manager.save(
+          finalParentRepo.create({
+            finalId: finalAccount.id,
+            childId: account.id
+          })
+        ); 
+      }
+
+      // معالجة الأبناء إن وجدوا
+      if (node.children?.length) {
+        for (const child of node.children) {
+          await processNode(account.id, child);
+        }
+      }
+
+      return account;
     }
-  }
 
-  if (node.children && node.children.length > 0) {
-    for (const child of node.children) {
-      await insertTree(account, child, accountRepo, relationRepo, userId, finalAccounts);
+    // بدء معالجة الشجرة من الجذور
+    for (const node of accountTree) {
+      if (!node.final_account) {
+        await processNode(null, node);
+      }
     }
+
+    // إتمام المعاملة بنجاح
+    await queryRunner.commitTransaction();
+    console.log('تم إنشاء شجرة الحسابات بنجاح');
+  } catch (error) {
+    // التراجع في حالة الخطأ
+    await queryRunner.rollbackTransaction();
+    console.error('فشل في إنشاء شجرة الحسابات:', error);
+    throw error;
+  } finally {
+    // تحرير الموارد
+    await queryRunner.release();
   }
-
-  return account;
-}
-
-export async function seedAccountTreeIfEmpty(userId: number): Promise<void> {
-  const dataSource = AppDataSource.isInitialized
-    ? AppDataSource
-    : await AppDataSource.initialize();
-
-  const accountRepo = dataSource.getRepository(Account);
-  const relationRepo = dataSource.getRepository(AccountRelation);
-
-  const count = await accountRepo.count();
-  if (count > 0) {
-    console.log("✅ شجرة الحسابات موجودة بالفعل، لا حاجة لإعادة إنشائها.");
-    return;
-  }
-
-  const finalAccounts: Record<string, Account> = {};
-  const finalAccountNames = [
-    'الميزانية',
-    'الأرباح والخسائر',
-    'المتاجرة',
-    'التشغيل'
-  ];
-
-  for (const accountName of finalAccountNames) {
-    const node = accountTree.find(n => n.name === accountName);
-    if (node) {
-      const account = await insertTree(null, node, accountRepo, relationRepo, userId);
-      finalAccounts[accountName] = account;
-    }
-  }
-
-  const normalAccountNodes = accountTree.filter(node => !node.final_account);
-  for (const node of normalAccountNodes) {
-    await insertTree(null, node, accountRepo, relationRepo, userId, finalAccounts);
-  }
-
-  if (finalAccounts['المتاجرة'] && finalAccounts['الأرباح والخسائر']) {
-    await relationRepo.save({
-      parent: finalAccounts['الأرباح والخسائر'],
-      child: finalAccounts['المتاجرة']
-    });
-  }
-
-  if (finalAccounts['التشغيل'] && finalAccounts['الأرباح والخسائر']) {
-    await relationRepo.save({
-      parent: finalAccounts['الأرباح والخسائر'],
-      child: finalAccounts['التشغيل']
-    });
-  }
-
-  console.log("✅ تم إنشاء شجرة الحسابات بنجاح مع ربط جميع الحسابات الختامية!");
 }

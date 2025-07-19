@@ -1,14 +1,16 @@
 import { Request, Response } from "express";
 import { AppDataSource } from '../lib/postgres';
 import { JournalEntry } from "../entities/JournalEntry";
-import { JournalDetails } from "../entities/JournalDetails";
+import { JournalEntryDetail } from "../entities/JournalDetails";
 import { User } from '../entities/userModel';
 import { Account } from "../entities/accountTree";
+import { Branch } from "../entities/branch";
 type Journal = {
   id?: number;
   date: string;
   description?: string;
   userId: number;
+  branchId: number;
   currency?: string;
   status?: "accept" | "pending";
   type?: "primary" | "accountant";
@@ -21,22 +23,23 @@ type Journal = {
 }
 const createJournal = async (req: Request, res: Response): Promise<void> => {
   const entryRepo = AppDataSource.getRepository(JournalEntry);
-  const detailRepo = AppDataSource.getRepository(JournalDetails);
-  const userRepo = AppDataSource.getRepository(User);
+  const detailRepo = AppDataSource.getRepository(JournalEntryDetail);
   const accountRepo = AppDataSource.getRepository(Account);
-
+  const userRepo=AppDataSource.getRepository(User);
+  const branchRepo=AppDataSource.getRepository(Branch)
   try {
     const {
       date,
       description,
       userId,
+      branchId,
       currency,
       status,
       type,
       details
     } = req.body as Journal;
 
-    if (!date || !userId || !details || !Array.isArray(details) || details.length < 2) {
+    if (!date || !userId || !details || !Array.isArray(details) || details.length < 2 || !branchId) {
       res.status(400).json({ message: "Missing required fields or invalid details." });
       return;
     }
@@ -44,7 +47,12 @@ const createJournal = async (req: Request, res: Response): Promise<void> => {
     // Check User
     const user = await userRepo.findOneBy({ id: userId });
     if (!user) {
-      res.status(404).json({ message: "User not found." });
+      res.status(203).json({ message: "User not found." });
+      return;
+    }
+    const branch=await branchRepo.findOneBy({id:branchId})
+    if(!branch){
+      res.status(203).json({message:`branch not found`})
       return;
     }
 
@@ -52,14 +60,13 @@ const createJournal = async (req: Request, res: Response): Promise<void> => {
     const accountIds = details.map((d: any) => d.accountId);
     const accounts = await accountRepo.findByIds(accountIds);
     if (accounts.length !== accountIds.length) {
-      res.status(400).json({ message: "One or more accountIds are invalid." });
+      res.status(203).json({ message: "One or more accountIds are invalid." });
       return;
     }
 
     // Check sum of debtor and creditor
     const totalDebtor = details.reduce((sum: number, d: any) => sum + (d.debtor || 0), 0);
     const totalCreditor = details.reduce((sum: number, d: any) => sum + (d.creditor || 0), 0);
-
     if (totalDebtor !== totalCreditor) {
       res.status(400).json({ message: "Journal entry is not balanced. Debtor and Creditor must be equal." });
       return;
@@ -69,7 +76,8 @@ const createJournal = async (req: Request, res: Response): Promise<void> => {
     const journalEntry = entryRepo.create({
       date: date,
       description: description,
-      userId: userRepo.create({ id: userId }),
+      userId: userId,
+      branchId:branchId,
       currency: currency,
       status: status || "pending",
       type: type || "primary",
@@ -94,16 +102,24 @@ const createJournal = async (req: Request, res: Response): Promise<void> => {
       message: "Journal entry created successfully.",
       journalEntryId: journalEntry.id
     });
+    return;
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Internal server error", error: err });
+    res.status(500).json({ message: "Internal server error", error: err })
+    return;
   }
 };
 const getJournal = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 2;
+    const limit = Number(req.query.limit) || 5;
     const skip = (page - 1) * limit;
+
+    const branchId = Number(req.params.branchId);
+    if (!branchId || isNaN(branchId)) {
+      res.status(400).json({ message: "branchId is required and must be a valid number" });
+      return;
+    }
 
     const journalRepo = AppDataSource.getRepository(JournalEntry);
 
@@ -128,24 +144,27 @@ const getJournal = async (req: Request, res: Response): Promise<void> => {
         "account.id",
         "account.name"
       ])
+      .where("journal.branchId = :branchId", { branchId })
       .orderBy("journal.date", "DESC")
       .skip(skip)
       .take(limit)
       .getMany();
+      if(journals.length===0){
 
+        res.status(203).json({message:`No Content`})
+        return;
+      }
     res.status(200).json(journals);
+    return;
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err });
   }
 };
 
-
-
-
 const updateJournal = async (req: Request, res: Response): Promise<void> => {
   const entryRepo = AppDataSource.getRepository(JournalEntry);
-  const detailRepo = AppDataSource.getRepository(JournalDetails);
+  const detailRepo = AppDataSource.getRepository(JournalEntryDetail);
   const accountRepo = AppDataSource.getRepository(Account);
 
   try {
@@ -233,4 +252,4 @@ const deleteJournal = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json(err)
   }
 }
-export default { createJournal, getJournal, updateJournal, deleteJournal }
+export default { getJournal, createJournal,deleteJournal,updateJournal }

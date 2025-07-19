@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
-import { statusCodes } from '../utils/statusCode';
-import { messages } from '../utils/message';
 import { Account } from "../entities/accountTree"
 import { AccountRelation } from '../entities/accountDetails';
-import { User } from '../entities/userModel';
 import { AppDataSource } from '../lib/postgres';
+import { AccountFinalParent } from '../entities/accountFinalParent';
+import { JournalEntryDetail } from '../entities/JournalDetails';
 type AccountNode = {
   id: number;
   name: string;
@@ -12,58 +11,81 @@ type AccountNode = {
   accountType?: string;
   isConfig?: boolean;
   currency?:string;
-  parent?:number;
-  parentFinalAccount?:number| null
+  parentId?:number;
   final_account?: boolean;
   userId?:number;
+  waring:number; 
+  Ratio:number;
   children: AccountNode[];
 };
+type BranchAccount={
+    branchId:number;
+  parentFinalAccountId:number;
+
+}
+
+
 const createAccount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, name_en, accountType, currency, parent,userId ,parentFinalAccount} = req.body as AccountNode;
+    const AccountRepo = AppDataSource.getRepository(Account);
+    const RelationRepo = AppDataSource.getRepository(AccountRelation);
+    const FinalRepo = AppDataSource.getRepository(AccountFinalParent);
 
-    const accountRepo = AppDataSource.getRepository(Account);
-    const relationRepo = AppDataSource.getRepository(AccountRelation);
-    const userRepo=AppDataSource.getRepository(User);
-    const newAccount = accountRepo.create({
-      name,
-      name_en,
-      accountType,
-      currency,
-      userId:userRepo.create({id:userId}),
-      parentFinalAccount: parentFinalAccount 
-        ? await accountRepo.findOneBy({ id: parentFinalAccount }) 
-        : null    });
+    const { name, name_en, currency, parentId, accountType, userId, waring, Ratio } = req.body as AccountNode;
+    const {branchId,parentFinalAccountId}=req.body as BranchAccount;
 
-    await accountRepo.save(newAccount);
-
-    if (parent) {
-      const parentAccount = await accountRepo.findOneBy({ id: parent });
-      if (!parentAccount) {
-        res.status(400).json({ error: "Parent account not found" });
-        return;
-      }
-      const newRelation = relationRepo.create({
-        parent: parentAccount,
-        child: newAccount
-      });
-
-      await relationRepo.save(newRelation);
+    if (!name || !name_en || !currency || !parentId || !parentFinalAccountId || !accountType || !userId || waring === undefined || Ratio === undefined) {
+      res.status(400).json({ message: `Invalid keys` });
+      return;
     }
 
-    res.status(201).json({ success: true, account: newAccount });
+    const newAccount = AccountRepo.create({
+      name,
+      name_en,
+      userId,
+      branchId,
+      currency,
+      waring,
+      Ratio,
+      accountType,
+    });
 
-  }
-  catch (err) {
+    const savedAccount = await AccountRepo.save(newAccount);
 
+    const newRelation = RelationRepo.create({
+      parentId: parentId,
+      childId: savedAccount.id,
+    });
+
+    const newFinal = FinalRepo.create({
+      finalId: parentFinalAccountId,
+      childId: savedAccount.id,
+    });
+
+    await RelationRepo.save(newRelation);
+    await FinalRepo.save(newFinal);
+
+    res.status(201).json({ message: `Success`, data: savedAccount });
+    return;
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+    return;
   }
-}
+};
 const getAccountTree = async (req: Request, res: Response): Promise<void> => {
   try {
+
+    const branchId = Number(req.params.branchId);
+    if (isNaN(branchId)) {
+      res.status(400).json({ message: "Invalid branchId" });
+      return;
+    }
     const accountRepo = AppDataSource.getRepository(Account);
     const relationRepo = AppDataSource.getRepository(AccountRelation);
 
-    const accounts = await accountRepo.find();
+    const accounts = await accountRepo.find({where:{branchId:branchId}});
     const relations = await relationRepo.find({ relations: ["parent", "child"] });
 
 
@@ -76,7 +98,8 @@ const getAccountTree = async (req: Request, res: Response): Promise<void> => {
         name_en: acc.name_en,
         accountType: acc.accountType,
         isConfig: acc.isConfig,
-
+        waring:acc.waring,
+        Ratio:acc.Ratio,
         children: [],
       });
     });
@@ -91,8 +114,12 @@ const getAccountTree = async (req: Request, res: Response): Promise<void> => {
 
     const childIds = new Set(relations.map(r => r.child.id));
     const roots = accounts.filter(acc => !childIds.has(acc.id)).map(acc => nodeMap.get(acc.id)!);
-
+    if(!roots || roots.length===0){
+      res.status(203).json({message:`No Content`})
+      return;
+    }
     res.json({ tree: roots });
+    return;
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -100,86 +127,174 @@ const getAccountTree = async (req: Request, res: Response): Promise<void> => {
 };
 const getFinalAccount = async (req: Request, res: Response): Promise<void> => {
   try {
+    const branchId = Number(req.params.branchId);
+    if (isNaN(branchId)) {
+      res.status(400).json({ message: "Invalid branchId" });
+      return;
+    }
     const accountRepo = AppDataSource.getRepository(Account);
     const accounts = await accountRepo.find({
-      where: { final_account: true },
+      where: { final_account: true ,branchId:branchId},
       select: ['id', 'name','accountType']
     })
+    if(!accounts || accounts.length===0){
+      res.status(203).json({message:`No Content`})
+      return;
+    }
     res.status(200).json(accounts);
+    return;
   }
   catch (err) {
     res.status(500).json(err)
+    return;
   }
 };
 const getParentAccount = async (req: Request, res: Response): Promise<void> => {
   try {
+    const branchId = Number(req.params.branchId);
+    if (isNaN(branchId)) {
+      res.status(400).json({ message: "Invalid branchId" });
+      return;
+    }
     const accountRepo = AppDataSource.getRepository(Account);
-    const accounts = await accountRepo.find({ where: { isParent: true }, select: ['id', 'name','accountType'] });
+    const accounts = await accountRepo.find({ where: { isParent: true ,branchId:branchId}, select: ['id', 'name','accountType'] });
+    if(!accounts || accounts.length===0){
+      res.status(203).json({message:`No Content`})
+      return;
+    }
     res.status(200).json(accounts);
+    return;
   }
   catch (err) {
     res.status(500).json(err);
+    return;
   }
 }
-const editAccountTree = async (req: Request, res: Response): Promise<void> => {
+const getChildAccount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id, name, name_en, parent, accountType, currency ,parentFinalAccount} = req.body as AccountNode;
+    const branchId = Number(req.params.branchId);
+    if (isNaN(branchId)) {
+      res.status(400).json({ message: "Invalid branchId" });
+      return;
+    }
+    const accountRepo = AppDataSource.getRepository(Account);
+    const accounts = await accountRepo.find({ where: { isParent: false ,branchId:branchId}, select: ['id', 'name','accountType'] });
+    if(!accounts || accounts.length===0){
+      res.status(203).json({message:`No Content`})
+      return;
+    }
+    res.status(200).json(accounts);
+    return;
+  }
+  catch (err) {
+    res.status(500).json(err);
+    return;
+  }
+}
+const getAccountStatement = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const accountIdRaw = req.params.accountId;
 
-    if (!id) {
-      res.status(400).json({ error: "ID is required" });
+    if (typeof accountIdRaw !== "string") {
+      res.status(400).json({ message: "accountId is required in params and must be a stringified number" });
+      return;
+    }
+
+    const accountId = Number(accountIdRaw);
+
+    if (isNaN(accountId)) {
+      res.status(400).json({ message: "accountId must be a valid number" });
       return;
     }
 
     const accountRepo = AppDataSource.getRepository(Account);
-    const relationRepo = AppDataSource.getRepository(AccountRelation);
+    const journalDetailRepo = AppDataSource.getRepository(JournalEntryDetail
+    );
 
-    const account = await accountRepo.findOneBy({ id });
+    // 1. تحقق من وجود الحساب
+    const account = await accountRepo.findOneBy({ id: accountId });
     if (!account) {
-      res.status(404).json({ error: "Account not found" });
+      res.status(203).json({ message: "Account not found" });
       return;
     }
 
-    account.name = name ?? account.name;
-    account.name_en = name_en ?? account.name_en;
-    account.accountType = accountType ?? account.accountType;
-    account.currency = currency ?? account.currency;
-if (parentFinalAccount !== undefined) {
-      if (parentFinalAccount === null) {
-        account.parentFinalAccount = null;
-      } else {
-        const finalAccount = await accountRepo.findOneBy({ id: parentFinalAccount });
-        if (!finalAccount) {
-          res.status(400).json({ error: "Parent final account not found" });
-          return;
-        }
-        account.parentFinalAccount = finalAccount;
-      }
-    }    await accountRepo.save(account);
+    const details = await journalDetailRepo.find({
+      where: { accountId: accountId },
+      relations: [
+        "journalEntry",
+        "journalEntry.details",
+        "journalEntry.details.account"  // تحميل بيانات الحساب المقابل
+      ]
+    });
 
+    // 3. تكوين كشف الحساب
+    const statement = details.map(detail => {
+      // الحصول على الطرف المقابل
+      const oppositeDetail = detail.journalEntry.details.find(d => d.accountId !== detail.accountId);
+      const oppositeAccountName = oppositeDetail?.account?.name ?? "طرف مقابل غير معروف";
 
-    await relationRepo.delete({ child: { id } });
-
-    if (parent) {
-      const parentAccount = await accountRepo.findOneBy({ id: parent });
-      if (!parentAccount) {
-        res.status(400).json({ error: "Parent account not found" });
-        return;
-      }
-
-      const newRelation = relationRepo.create({
-        parent: parentAccount,
-        child: account
-      });
-      await relationRepo.save(newRelation);
+      return {
+        journalEntryId: detail.journalEntry.id,
+        date: detail.journalEntry.date,
+        description: detail.journalEntry.description,
+        debit: detail.debtor,
+        credit: detail.creditor,
+        oppositeAccount: oppositeAccountName
+      };
+    });
+    if(statement.length===0){
+      res.status(203).json({message:`الحساب متوازن`,account:account.name})
     }
-
-    res.status(200).json({ success: true, account });
+    res.json({
+      account: account.name,
+      statement
+    });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error", details: err });
+    res.status(500).json({ message: "Internal server error", error: err });
   }
 };
+const editAccount=async(req:Request,res:Response):Promise<void>=>{
+  try{
+    const AccountRepo = AppDataSource.getRepository(Account);
+    const RelationRepo = AppDataSource.getRepository(AccountRelation);
+    const FinalRepo = AppDataSource.getRepository(AccountFinalParent);
+    const {id,name,name_en,accountType,Ratio,waring,parentId}=req.body as AccountNode;
+    const {parentFinalAccountId}=req.body as BranchAccount;
+    if(!id || !name || !name_en || !accountType || !Ratio || !waring || !parentId || !parentFinalAccountId){
+      res.status(400).json({message:`Invalid keys`})
+      return;
+    }
+    const findAccount=await AccountRepo.findOne({where:{id:id}});
+    if(!findAccount){
+      res.status(203).json({message:`No Content`})
+      return;
+    }
+    findAccount.name=name;
+    findAccount.name_en=name_en;
+    findAccount.accountType=accountType;
+    findAccount.Ratio=Ratio;
+    findAccount.waring=waring;
+    await AccountRepo.save(findAccount);
+    const relation=await RelationRepo.findOne({where:{childId:id}})
+    if(relation ){
+      relation.parentId=parentId;
+      await RelationRepo.save(relation);
+    }
+    const finalRelation = await FinalRepo.findOne({ where: { childId: id } });
+    if(finalRelation){
+      finalRelation.finalId=parentFinalAccountId
+      await FinalRepo.save(finalRelation)
+        }
+    res.status(200).json({message:`Success`,data:findAccount})
+    return;
+  }
+  catch(err){
+    res.status(500).json({message:err})
+    return;
+  }
+}
 const deleteAccount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.body as AccountNode
@@ -189,4 +304,4 @@ const deleteAccount = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ err })
   }
 };
-export default { getAccountTree, deleteAccount, getFinalAccount, getParentAccount, createAccount, editAccountTree }
+export default { getAccountTree, deleteAccount, getFinalAccount, getParentAccount, getChildAccount,createAccount ,editAccount,getAccountStatement};
