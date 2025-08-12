@@ -4,7 +4,7 @@ dotenv.config();
 const config={
     PORT:process.env.PORT||3001,
     NODE_ENV:process.env.NODE_ENV,
-    WHITELIST_ORIGINS:['http://localhost:5173','http://localhost:5174','https://accounting-am-soft.netlify.app','https://accounting-am-soft.netlify.app/'],
+    WHITELIST_ORIGINS:['http://localhost:5173','http://localhost:5174','https://benevolent-tanuki-a4a4a6.netlify.app/','https://benevolent-tanuki-a4a4a6.netlify.app/'],
     DB_HOST:process.env.DB_HOST,
     DB_PORT:process.env.DB_PORT,
     DB_USERNAME:process.env.DB_USERNAME,
