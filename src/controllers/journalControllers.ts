@@ -123,8 +123,6 @@ const getJournal = async (req: Request, res: Response): Promise<void> => {
       ])
       .where("journal.branchId = :branchId", { branchId })
       .orderBy("journal.date", "DESC")
-      .skip(skip)
-      .take(limit)
       .getMany();
       if(journals.length===0){
 
