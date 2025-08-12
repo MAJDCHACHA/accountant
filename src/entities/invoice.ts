@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from "typeorm";
 import { User } from './userModel';
 import { JournalEntry } from "./JournalEntry";
 import { InvoiceDetails } from "./invoiceDetails";
 import { Branch } from "./branch";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from "typeorm";
 @Entity()
 export class Invoice {
   @PrimaryGeneratedColumn()
@@ -11,7 +11,7 @@ export class Invoice {
   date: string;
   @Column("float")
   TotalInvoice: number;
-  @Column({ type: 'enum', enum: ['sales', 'return sales', 'purchases', 'return purchases', 'Warehouse Transfer'], default: 'sales' })
+  @Column({ type: 'enum', enum: ['sales', 'return_sales', 'purchases', 'return_purchases', 'Warehouse Transfer'], default: 'sales' })
   typeInvoice: string;
   @Column()
   currency: string;
@@ -23,7 +23,7 @@ export class Invoice {
   @ManyToOne(() => JournalEntry, { onDelete: "RESTRICT" })
   @JoinColumn({ name: "journalEntryId" })
   journalEntry: JournalEntry;
-  @Column()
+  @Column({nullable:true})
   journalEntryId: number;
   @OneToMany(() => InvoiceDetails, detail => detail.invoice)
   details: InvoiceDetails[];
@@ -32,4 +32,8 @@ export class Invoice {
   branch: Branch
   @Column()
   branchId: number
+  @CreateDateColumn()
+  createAt:Date;
+  @UpdateDateColumn()
+  updateAt:Date;
 }

@@ -1,3 +1,4 @@
+import { DeepPartial } from 'typeorm';
 import { Request, Response } from "express";
 import { AppDataSource } from '../lib/postgres';
 import { JournalEntry } from "../entities/JournalEntry";
@@ -5,44 +6,16 @@ import { JournalEntryDetail } from "../entities/JournalDetails";
 import { User } from '../entities/userModel';
 import { Account } from "../entities/accountTree";
 import { Branch } from "../entities/branch";
-type Journal = {
-  id?: number;
-  date: string;
-  description?: string;
-  userId: number;
-  branchId: number;
-  currency?: string;
-  status?: "accept" | "pending";
-  type?: "primary" | "accountant";
-  details: Array<{
-    accountId: number;
-    debtor: number;
-    creditor: number;
-    currency?: string;
-  }>;
-}
+import {createJournalType,createDetailsType,editJournalType} from '../types/journalEntryType';
 const createJournal = async (req: Request, res: Response): Promise<void> => {
   const entryRepo = AppDataSource.getRepository(JournalEntry);
   const detailRepo = AppDataSource.getRepository(JournalEntryDetail);
   const accountRepo = AppDataSource.getRepository(Account);
   const userRepo=AppDataSource.getRepository(User);
-  const branchRepo=AppDataSource.getRepository(Branch)
+  const branchRepo=AppDataSource.getRepository(Branch);
   try {
-    const {
-      date,
-      description,
-      userId,
-      branchId,
-      currency,
-      status,
-      type,
-      details
-    } = req.body as Journal;
-
-    if (!date || !userId || !details || !Array.isArray(details) || details.length < 2 || !branchId) {
-      res.status(400).json({ message: "Missing required fields or invalid details." });
-      return;
-    }
+    const {date,description,userId, branchId, currency, status,type} = req.body as createJournalType;
+    const {details}=req.body  as createDetailsType
 
     // Check User
     const user = await userRepo.findOneBy({ id: userId });
@@ -74,16 +47,15 @@ const createJournal = async (req: Request, res: Response): Promise<void> => {
 
     // Create JournalEntry
     const journalEntry = entryRepo.create({
-      date: date,
-      description: description,
-      userId: userId,
-      branchId:branchId,
-      currency: currency,
-      status: status || "pending",
-      type: type || "primary",
-    });
-
-    await entryRepo.save(journalEntry);
+  date,
+  description,
+  userId,
+  branchId,
+  currency,
+  status,
+  type,
+} as DeepPartial<JournalEntry>);
+   await entryRepo.save(journalEntry);
 
     // Create JournalDetails
     const journalDetails = details.map((d: any) =>
@@ -92,7 +64,10 @@ const createJournal = async (req: Request, res: Response): Promise<void> => {
         account: accounts.find(a => a.id === d.accountId),
         debtor: d.debtor,
         creditor: d.creditor,
-        currency: d.currency || currency
+        currency: d.currency || currency,
+        debtorVs:d.debtorVs,
+        creditorVs:d.creditorVs,
+        currencyVs:d.currencyVs
       })
     );
 
@@ -116,13 +91,9 @@ const getJournal = async (req: Request, res: Response): Promise<void> => {
     const skip = (page - 1) * limit;
 
     const branchId = Number(req.params.branchId);
-    if (!branchId || isNaN(branchId)) {
-      res.status(400).json({ message: "branchId is required and must be a valid number" });
-      return;
-    }
+
 
     const journalRepo = AppDataSource.getRepository(JournalEntry);
-
     const journals = await journalRepo
       .createQueryBuilder("journal")
       .leftJoinAndSelect("journal.details", "details")
@@ -138,9 +109,15 @@ const getJournal = async (req: Request, res: Response): Promise<void> => {
         "journal.description",
         "journal.status",
         "journal.type",
+        "journal.currency",
         "details.id",
+    
         "details.debtor",
         "details.creditor",
+        "details.currency",
+        "details.debtorVs",
+        "details.creditorVs",
+        "details.currencyVs",
         "account.id",
         "account.name"
       ])
@@ -161,7 +138,49 @@ const getJournal = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: "Server error", error: err });
   }
 };
-
+const getJournalById=async(req:Request,res:Response):Promise<void>=>{
+  try{
+     const {id}=req.params;
+    const journalRepo = AppDataSource.getRepository(JournalEntry);
+    const journals = await journalRepo
+      .createQueryBuilder("journal")
+      .leftJoinAndSelect("journal.details", "details")
+      .leftJoinAndMapOne(
+        "details.accountData",
+        Account,
+        "account",
+        "account.id = details.accountId"
+      )
+      .select([
+        "journal.id",
+        "journal.date",
+        "journal.description",
+        "journal.status",
+        "journal.type",
+        "details.id",
+        "details.debtor",
+        "details.creditor",
+        "details.currency",
+        "details.debtorVs",
+        "details.creditorVs",
+        "details.currencyVs",
+        "account.id",
+        "account.name"
+      ])
+      .where("journal.id = :id", { id })
+      .orderBy("journal.date", "DESC")
+      .getMany();
+      if(journals.length===0){
+        res.status(203).json({message:`No Content`})
+        return;
+      }
+    res.status(200).json(journals);
+  }
+  catch(err){
+    res.status(500).json({message:err})
+    return;
+  }
+};
 const updateJournal = async (req: Request, res: Response): Promise<void> => {
   const entryRepo = AppDataSource.getRepository(JournalEntry);
   const detailRepo = AppDataSource.getRepository(JournalEntryDetail);
@@ -173,10 +192,8 @@ const updateJournal = async (req: Request, res: Response): Promise<void> => {
       date,
       description,
       currency,
-      status,
-      type,
       details,
-    } = req.body as Journal & { id: number };
+    } = req.body as editJournalType;
 
     if (!id || !date || !details || !Array.isArray(details) || details.length < 2) {
       res.status(400).json({ message: "Missing required fields or invalid details." });
@@ -215,15 +232,9 @@ const updateJournal = async (req: Request, res: Response): Promise<void> => {
     journalEntry.date = date;
     journalEntry.description = description || '';
     journalEntry.currency = currency || '';
-    journalEntry.status = status || journalEntry.status;
-    journalEntry.type = type || journalEntry.type;
-
     await entryRepo.save(journalEntry);
-
-    // Delete old details before adding new ones (simplest approach)
     await detailRepo.delete({ journalEntry: { id: journalEntry.id } });
 
-    // Create new details
     const newDetails = details.map(d =>
       detailRepo.create({
         journalEntry,
@@ -231,6 +242,9 @@ const updateJournal = async (req: Request, res: Response): Promise<void> => {
         debtor: d.debtor,
         creditor: d.creditor,
         currency: d.currency || currency,
+        debtorVs:d.debtorVs,
+        creditorVs:d.creditorVs,
+        currencyVs:d.currencyVs
       })
     );
 
@@ -243,13 +257,46 @@ const updateJournal = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: "Internal server error", error: err });
   }
 };
+const updateStatusJournal = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const journalRepo = AppDataSource.getRepository(JournalEntry);
+    const { id } = req.body;
+    const findJournal = await journalRepo.findOne({ where: { id } });
+    if (!findJournal) {
+      res.status(404).json({ message: `Journal entry not found` });
+      return;
+    }
+    if (findJournal.status === `pending`) {
+      findJournal.status = `accept`;
+      await journalRepo.save(findJournal);
+      res.status(200).json({ message: `Update Status Success` });
+      return;
+    }
+    res.status(400).json({ message: `Journal entry is not in pending status` });
+  } catch (err) {
+    res.status(500).json({ message: `Internal Server Error`, error: err });
+  }
+};
 const deleteJournal = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.body as Journal;
-
+    const { id } = req.body;
+    const JournalRepo=AppDataSource.getRepository(JournalEntry);
+    const findJournal=await JournalRepo.findOne({where:{id:id}})
+    if(!findJournal){
+      res.status(203).json({message:`No Content`})
+      return;
+    }
+    if(findJournal && findJournal.status===`accept`){
+      res.status(400).json({message:`Can not delete Journal because is accept `})
+      return;
+    }
+  await JournalRepo.delete({id:id})
+  res.status(200).json({message:`Delete Success`})
+  return;
   }
   catch (err) {
     res.status(500).json(err)
+    return;
   }
-}
-export default { getJournal, createJournal,deleteJournal,updateJournal }
+};
+export default { getJournal,getJournalById, createJournal,deleteJournal,updateJournal,updateStatusJournal }

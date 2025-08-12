@@ -16,7 +16,9 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^24.0.0",
+    "@types/socket.io": "^3.0.1",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "ts-transformer-paths": "^1.0.0-alpha.1",
@@ -35,8 +37,10 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.2",
+    "morgan": "^1.10.1",
     "pg": "^8.16.2",
     "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.1",
     "typeorm": "^0.3.25",
     "winston": "^3.17.0"
   }

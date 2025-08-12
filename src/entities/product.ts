@@ -1,8 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 import { User } from "./userModel";
 import { CompanyName } from "./companyName";
-import { ProductDetails } from "./productDetails";
 import { Branch } from "./branch";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
 @Entity()
 export class Product {
   @PrimaryGeneratedColumn()
@@ -19,14 +18,12 @@ export class Product {
   user: User;
   @Column()
   userId: number;
-  // @OneToMany(()=>ProductDetails,productDetails=>productDetails.product)
-  // details:ProductDetails
   @ManyToOne(() => Branch, branch => branch.product, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'branchId' })
   branch: Branch
   @Column()
   branchId: number;
-  @Column({ type: 'decimal', nullable: false })
+  @Column({ type: 'float', default:0 })
   amount: number;
   @Column({ type: 'varchar', default: '' })
   description: string;

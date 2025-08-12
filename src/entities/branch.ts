@@ -1,9 +1,9 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from "typeorm";
 import { User } from "./userModel";
 import { Product } from "./product";
 import { Invoice } from "./invoice";
 import { Account } from "./accountTree";
 import { JournalEntry } from "./JournalEntry";
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from "typeorm";
 @Entity()
 export class Branch {
     @PrimaryGeneratedColumn()

@@ -14,21 +14,12 @@ const createBranch = async (req: Request, res: Response): Promise<void> => {
 
     const branchRepo = AppDataSource.getRepository(Branch);
     const userRepo = AppDataSource.getRepository(User);
-
-    if (!name || !phone || !location || !username || !password || !role) {
-      res.status(400).json({ message: `invalid keys` });
-      return;
-    }
-
     const findBranch = await branchRepo.find({ where: { name: name } });
     const findUser = await userRepo.find({ where: { username: username } });
-
     if (findBranch.length === 0 && findUser.length === 0) {
-      const newBranch = branchRepo.create({ name:name, phone:phone, location:location });
-      const savedBranch = await branchRepo.save(newBranch);
-
-
-      const newUser = userRepo.create({
+    const newBranch = branchRepo.create({ name:name, phone:phone, location:location });
+    const savedBranch = await branchRepo.save(newBranch);
+    const newUser = userRepo.create({
         username:username,
         password: password,
         role:role,
@@ -55,7 +46,6 @@ const createBranch = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: err });
   }
 };
-
 const getBranch=async(req:Request,res:Response):Promise<void>=>{
     try{
         const branchRepo=AppDataSource.getRepository(Branch);
@@ -71,7 +61,7 @@ const getBranch=async(req:Request,res:Response):Promise<void>=>{
         res.status(500).json({message:err})
         return;
     }
-}
+};
 const updateBranch=async(req:Request,res:Response):Promise<void>=>{
     try{
         const {id,name,phone,location}=req.body as branch
@@ -96,5 +86,5 @@ const updateBranch=async(req:Request,res:Response):Promise<void>=>{
         res.status(500).json({message:err})
         return;
     }
-}
+};
 export default {createBranch,getBranch,updateBranch}

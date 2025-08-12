@@ -2,128 +2,128 @@ import { Request, Response } from "express";
 import { AppDataSource } from '../lib/postgres';
 import { Product } from '../entities/product'
 import { CompanyName } from "../entities/companyName";
-type ProductDetails = {
-    id: number;
-    name: string;
-    userId: number;
-    companyId: number;
-    branchId: number;
-    description: string;
-    amount:number;
-    pricePurchases:number;
-    priceSales:number;
-    unit:string
-}
+import { InvoiceDetails } from "../entities/invoiceDetails";
+import { createProductType,editProductType,deleteProductType } from "../types/productTypes";
+
 const createProduct = async (req: Request, res: Response): Promise<void> => {
     try {
         const productRepo = AppDataSource.getRepository(Product);
-        const { name, userId, companyId, branchId, description,amount,pricePurchases,priceSales,unit } = req.body as ProductDetails;
-        if (!name || !userId || !companyId || !branchId || !description ||!amount || !priceSales || !pricePurchases  || !unit) {
-            res.status(400).json({ message: `invalid keys` })
+        const { name, userId, companyId, branchId, description, amount, pricePurchases, priceSales, unit } = req.body as createProductType;
+
+        const existingProduct = await productRepo.findOne({ where: { name, companyId } });
+        if (existingProduct) {
+            res.status(400).json({ message: `Product already exists`, product: existingProduct });
             return;
         }
-        const findProduct = await productRepo.find({where:{ name:name} })
-        if (findProduct.length===0) {        
-        const createProduct = productRepo.create({
-            name: name,
-            userId: userId,
-            companyId: companyId,
-            branchId: branchId,
-            description: description,
-            amount:amount,
-            pricePurchases:pricePurchases,
-            priceSales:priceSales,
-            unit:unit
-        })
 
-        await productRepo.save(createProduct);
-        res.status(201).json({ message: `create product`, data: createProduct });
-        return
-        }
-        res.status(400).json({message:`already exist`,findProduct})
-        return;
-    }
-    catch (err) {
-        res.status(500).json({ message: err })
-    }
-}
-const getProduct = async (req: Request, res: Response): Promise<void> => {
-    try {
-
-        const { branchId } = req.params;
-        const branchIdNum = branchId ? Number(branchId) : undefined;
-        const page = Number(req.query.page) || 1;
-        const limit = Number(req.query.limit) || 2;
-        const skip = (page - 1) * limit;
-        const whereClause = branchIdNum ? { branchId: branchIdNum } : {};
-        if(!branchId){
-            res.status(400).json({message:`invalid keys`})
-            return;
-        }
-        const productRepo = AppDataSource.getRepository(Product);
-        const product = await productRepo.find({
-            where: whereClause,
-            relations: ['company']
+        const newProduct = productRepo.create({
+            name,
+            userId,
+            companyId,
+            branchId,
+            description,
+            amount:Number(amount),
+            pricePurchases:Number(amount),
+            priceSales:Number(amount),
+            unit
         });
 
-        if (product.length===0) {
-            res.status(203).json({ message: `no content` })
+        await productRepo.save(newProduct);
+
+        res.status(201).json({ message: `Product created successfully`, data: newProduct });
+    } catch (err) {
+        res.status(500).json({ message: `Internal server error`, error: err });
+    }
+};
+const getProduct = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const branchId = req.params.branchId 
+        const newId=Number(branchId)
+        const productRepo = AppDataSource.getRepository(Product);
+        const product = await productRepo.find({
+            where: { branchId:newId },
+            relations: ['company']
+        });
+        if (product.length === 0) {
+            res.status(203).json({ message: `No content` });
             return;
         }
+
         const result = product.map(p => ({
             id: p.id,
             name: p.name,
             companyName: p.company ? p.company.name : null,
-            amount:p.amount,
-            pricePurchases:p.pricePurchases,
-            priceSales:p.priceSales
+            amount: p.amount,
+            pricePurchases: p.pricePurchases,
+            priceSales: p.priceSales,
+            description:p.description,
+            unit:p.unit
         }));
-        res.status(200).json({ message: `get product`, data: result })
-        return;
-    }
-    catch (err) {
-        res.status(500).json({ message: err })
-        return;
+
+        res.status(200).json({ message: `Products fetched successfully`, data: result });
+    } catch (err) {
+        res.status(500).json({ message: `Internal server error`, error: err });
     }
 };
 const editProduct = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id, name, description,companyId,amount } = req.body as ProductDetails;
+        const { id, name, description, companyId, amount, pricePurchases, priceSales, unit } = req.body as editProductType;
+
         const productRepo = AppDataSource.getRepository(Product);
-        const companyRepo=AppDataSource.getRepository(CompanyName);
-        if (!id || !name || !description ||!companyId ||!amount) {
-             res.status(400).json({ message: `invalid keys` });
-             return
-        }
-        const findProduct = await productRepo.findOneBy({ id: id });
-        const findCompany=await companyRepo.findOneBy({id:companyId});
+        const companyRepo = AppDataSource.getRepository(CompanyName);
+
+        const findProduct = await productRepo.findOneBy({ id });
         if (!findProduct) {
-             res.status(203).json({ message: `No Content product` }); // 204 بدلاً من 203
-             return
-        }
-        if(!findCompany){
-            res.status(203).json({message:`No Content company`})
+            res.status(203).json({ message: `No Content product` });
             return;
         }
+
+        if (companyId) {
+            const findCompany = await companyRepo.findOneBy({ id: companyId });
+            if (!findCompany) {
+                res.status(203).json({ message: `No Content company` });
+                return;
+            }
+            findProduct.companyId = companyId;
+        }
+
         findProduct.name = name ?? findProduct.name;
         findProduct.description = description ?? findProduct.description;
-        findProduct.companyId=companyId;
-        findProduct.amount=amount
+        findProduct.amount = amount ?? findProduct.amount;
+        findProduct.pricePurchases = pricePurchases ?? findProduct.pricePurchases;
+        findProduct.priceSales = priceSales ?? findProduct.priceSales;
+        findProduct.unit = unit ?? findProduct.unit;
         await productRepo.save(findProduct);
-         res.status(200).json({ message: `update product`, data: findProduct });
-         return
-    }
-    catch (err) {
-         res.status(500).json({ message: 'Unknown error' });
-         return
+        res.status(200).json({ message: `Product updated successfully`, data: findProduct });
+        return
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error', error: err });
+        return;
     }
 };
 const deleteProduct = async (req: Request, res: Response): Promise<void> => {
     try {
+        const {id}=req.params
+        const newId=Number(id);
+        const InvoiceDetailsRepo=AppDataSource.getRepository(InvoiceDetails);
+        const productRepo=AppDataSource.getRepository(Product);
+        const findAndDelete=await InvoiceDetailsRepo.findBy({productId:newId})
+        const existProduct=await productRepo.findBy({id:newId})
+        if(existProduct.length===0){
+            res.status(203).json({message:`No Content`})
+            return;
+        }
+        if(findAndDelete.length>0){
+            res.status(401).json({message:`Can not delete product because is find in invoice`})
+            return;
+        }
+        await productRepo.delete({id:newId})
         res.status(200).json({ message: `delete product` })
+        return;
     }
     catch (err) {
         res.status(500).json({ message: err })
+        return;
     }
 };
 export default { getProduct, createProduct,editProduct, deleteProduct };

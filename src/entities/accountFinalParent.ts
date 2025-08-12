@@ -1,5 +1,5 @@
-import { Entity,Column,ManyToOne,PrimaryGeneratedColumn,CreateDateColumn,UpdateDateColumn, JoinColumn } from "typeorm";
 import { Account } from "./accountTree";
+import { Entity,Column,ManyToOne,PrimaryGeneratedColumn, JoinColumn } from "typeorm";
 @Entity()
 export class AccountFinalParent{
     @PrimaryGeneratedColumn()

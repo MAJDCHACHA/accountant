@@ -299,11 +299,9 @@ export default async function seedAccountTreeIfEmpty(
   userId: number,
   branchId:number
 ): Promise<void> {
-  // التحقق من وجود حسابات لهذا المستخدم
   const accountRepo=AppDataSource.getRepository(Account);
   const relationRepo=AppDataSource.getRepository(AccountRelation);
   const finalParentRepo=AppDataSource.getRepository(AccountFinalParent);
-  // إنشاء معاملة لضمان سلامة البيانات
   const queryRunner = accountRepo.manager.connection.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
@@ -311,7 +309,6 @@ export default async function seedAccountTreeIfEmpty(
   try {
     const finalAccounts: Record<string, Account> = {};
 
-    // 1. إنشاء الحسابات النهائية أولاً
     for (const node of accountTree) {
       if (node.final_account) {
         const account = accountRepo.create({
@@ -329,7 +326,6 @@ export default async function seedAccountTreeIfEmpty(
       }
     }
 
-    // 2. إنشاء باقي الحسابات مع علاقاتها
     async function processNode(parentId: number | null, node: AccountNode): Promise<Account> {
       if (node.final_account) {
         return finalAccounts[node.name];
@@ -348,7 +344,6 @@ export default async function seedAccountTreeIfEmpty(
 
       await queryRunner.manager.save(account);
 
-      // ربط الحساب بأبيه إذا كان موجوداً
       if (parentId !== null) {
         const relation = relationRepo.create({
           parentId: parentId,
@@ -357,7 +352,6 @@ export default async function seedAccountTreeIfEmpty(
         await queryRunner.manager.save(relation);
       }
 
-      // تحديد الحساب الختامي المناسب
       let finalAccount: Account | undefined;
       switch (node.accountType) {
         case 'asset':
@@ -378,7 +372,6 @@ export default async function seedAccountTreeIfEmpty(
           break;
       }
 
-      // ربط الحساب بحسابه الختامي
       if (finalAccount) {
         await queryRunner.manager.save(
           finalParentRepo.create({
@@ -388,7 +381,6 @@ export default async function seedAccountTreeIfEmpty(
         ); 
       }
 
-      // معالجة الأبناء إن وجدوا
       if (node.children?.length) {
         for (const child of node.children) {
           await processNode(account.id, child);
@@ -398,23 +390,19 @@ export default async function seedAccountTreeIfEmpty(
       return account;
     }
 
-    // بدء معالجة الشجرة من الجذور
     for (const node of accountTree) {
       if (!node.final_account) {
         await processNode(null, node);
       }
     }
 
-    // إتمام المعاملة بنجاح
     await queryRunner.commitTransaction();
-    console.log('تم إنشاء شجرة الحسابات بنجاح');
+    console.log('Create Accout Tree Successfly');
   } catch (error) {
-    // التراجع في حالة الخطأ
     await queryRunner.rollbackTransaction();
-    console.error('فشل في إنشاء شجرة الحسابات:', error);
+    console.error('Feild Create Account Tree', error);
     throw error;
   } finally {
-    // تحرير الموارد
     await queryRunner.release();
   }
 }

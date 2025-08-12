@@ -14,10 +14,12 @@ import productRoutes from './routes/productRoutes'
 import companyRoutes from './routes/companyRoutes'
 import invoiceRoutes from './routes/invoiceRoutes'
 import branchRoutes from './routes/branchRoutes';
+import morgan from 'morgan';
 const app=express();
 app.use(express.json());
 app.use(cors(corsOptions));
 app.use(helmet());
+app.use(morgan("dev"))
 app.use(compression({
     threshold:1024
 }));

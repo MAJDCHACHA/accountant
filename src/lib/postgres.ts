@@ -9,7 +9,6 @@ import { JournalEntryDetail } from "../entities/JournalDetails";
 import { AccountRelation } from "../entities/accountDetails";
 import { CompanyName } from "../entities/companyName";
 import { Product } from "../entities/product";
-import { ProductDetails } from "../entities/productDetails";
 import { Invoice } from "../entities/invoice";
 import { InvoiceDetails } from "../entities/invoiceDetails";
 import { Branch } from "../entities/branch";
@@ -21,9 +20,9 @@ export const AppDataSource = new DataSource({
   username: config.DB_USERNAME,
   password: config.DB_PASSWORD,
   database: config.DB_NAME,
-  synchronize: true, // استخدم false في الإنتاج
+  synchronize: true, 
   logging: false,
-  entities: [Branch,User, Account, JournalEntry, JournalEntryDetail,AccountRelation,Product,ProductDetails,CompanyName,Invoice,InvoiceDetails,AccountFinalParent],
+  entities: [Branch,User, Account, JournalEntry, JournalEntryDetail,AccountRelation,Product,CompanyName,Invoice,InvoiceDetails,AccountFinalParent],
   extra: {
     ssl: {
       rejectUnauthorized: false,

@@ -29,10 +29,6 @@ const register = async (req: Request, res: Response): Promise<void> => {
 const login = async (req: Request, res: Response): Promise<void> => {
   const {username,password}=req.body as LoginData;
   const userRepo=AppDataSource.getRepository(User);
-  if(!username || !password){
-    res.status(400).json({message:`Invalid keys`})
-    return;
-  }
   const findUser=await userRepo.findOneBy({username:username});
   if(!findUser){
     res.status(203).json({message:`user not found`})
@@ -50,22 +46,19 @@ const login = async (req: Request, res: Response): Promise<void> => {
 const refreshToken = async (req: Request, res: Response): Promise<void> => {
   try {
     const { refreshToken } = req.body as RefreshTokenData;
-    if(!refreshToken){
-      res.status(400).json({message:`Invalid keys`})
-      return;
-    }
     const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_TOKEN) as { userId: number };
     const userRepository = AppDataSource.getRepository(User);
     const foundUser = await userRepository.findOne({ where: { id: decoded.userId } });
 
     if (!foundUser) {
-      res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message:'Unauthorized' });
       return;
     }
 
     const accessToken = generateAccessToken(foundUser.id);
 
     res.status(200).json({accessToken:accessToken });
+    return
   } catch (err) {
     res.status(500).json({ message: err });
     return;
