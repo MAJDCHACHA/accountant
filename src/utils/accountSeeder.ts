@@ -262,7 +262,7 @@ export const accountTree = [
   {
     name: "الأرباح والخسائر",
     name_en: "Profit and Loss",
-    accountType: "BalanceSheet",
+    accountType: "ProfitLoss",
     final_account: true,
     isConfig:true,
     isParent:true,
@@ -271,7 +271,7 @@ export const accountTree = [
   {
     name: "المتاجرة",
     name_en: "Trading Account",
-    accountType: "BalanceSheet",
+    accountType: "TradingAccount",
     final_account: true,
     isConfig:true,
     isParent:true,
@@ -295,13 +295,126 @@ type AccountNode = {
   children?: AccountNode[];
 
 };
+// export default async function seedAccountTreeIfEmpty(
+//   userId: number,
+//   branchId:number
+// ): Promise<void> {
+//   const accountRepo=AppDataSource.getRepository(Account);
+//   const relationRepo=AppDataSource.getRepository(AccountRelation);
+//   const finalParentRepo=AppDataSource.getRepository(AccountFinalParent);
+//   const queryRunner = accountRepo.manager.connection.createQueryRunner();
+//   await queryRunner.connect();
+//   await queryRunner.startTransaction();
+
+//   try {
+//     const finalAccounts: Record<string, Account> = {};
+
+//     for (const node of accountTree) {
+//       if (node.final_account) {
+//         const account = accountRepo.create({
+//           name: node.name,
+//           name_en: node.name_en,
+//           accountType: node.accountType,
+//           isConfig: node.isConfig ?? false,
+//           final_account: true,
+//           isParent: node.isParent ?? false,
+//           userId:userId,
+//           branchId:branchId
+//         });
+//         await queryRunner.manager.save(account);
+//         finalAccounts[node.name] = account;
+//       }
+//     }
+
+//     async function processNode(parentId: number | null, node: AccountNode): Promise<Account> {
+//       if (node.final_account) {
+//         return finalAccounts[node.name];
+//       }
+
+//       const account = accountRepo.create({
+//         name: node.name,
+//         name_en: node.name_en,
+//         accountType: node.accountType,
+//         isConfig: node.isConfig ?? false,
+//         final_account: false,
+//         isParent: node.isParent ?? (node.children && node.children.length > 0),
+//         userId,
+//         branchId
+//       });
+
+//       await queryRunner.manager.save(account);
+
+//       if (parentId !== null) {
+//         const relation = relationRepo.create({
+//           parentId: parentId,
+//           childId: account.id
+//         });
+//         await queryRunner.manager.save(relation);
+//       }
+
+//       let finalAccount: Account | undefined;
+//       switch (node.accountType) {
+//         case 'asset':
+//         case 'liability':
+//         case 'Inventory':
+//         case 'ProfitLoss':
+//           finalAccount = finalAccounts['الميزانية'];
+//           break;
+//         case 'expense':
+//         case 'revenue':
+//         case 'TradingAccount':
+//           finalAccount = finalAccounts['الأرباح والخسائر'];
+//           break;
+//         case 'NetPurchases':
+//         case 'NetSales':
+//           finalAccount = finalAccounts['المتاجرة'];
+//           break;
+//         case 'operating':
+//           finalAccount = finalAccounts['التشغيل'];
+//           break;
+//       }
+
+//       if (finalAccount) {
+//         await queryRunner.manager.save(
+//           finalParentRepo.create({
+//             finalId: finalAccount.id,
+//             childId: account.id
+//           })
+//         ); 
+//       }
+
+//       if (node.children?.length) {
+//         for (const child of node.children) {
+//           await processNode(account.id, child);
+//         }
+//       }
+
+//       return account;
+//     }
+
+//     for (const node of accountTree) {
+//       if (!node.final_account) {
+//         await processNode(null, node);
+//       }
+//     }
+
+//     await queryRunner.commitTransaction();
+//     console.log('Create Accout Tree Successfly');
+//   } catch (error) {
+//     await queryRunner.rollbackTransaction();
+//     console.error('Feild Create Account Tree', error);
+//     throw error;
+//   } finally {
+//     await queryRunner.release();
+//   }
+// }
 export default async function seedAccountTreeIfEmpty(
   userId: number,
-  branchId:number
+  branchId: number
 ): Promise<void> {
-  const accountRepo=AppDataSource.getRepository(Account);
-  const relationRepo=AppDataSource.getRepository(AccountRelation);
-  const finalParentRepo=AppDataSource.getRepository(AccountFinalParent);
+  const accountRepo = AppDataSource.getRepository(Account);
+  const relationRepo = AppDataSource.getRepository(AccountRelation);
+  const finalParentRepo = AppDataSource.getRepository(AccountFinalParent);
   const queryRunner = accountRepo.manager.connection.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
@@ -309,28 +422,48 @@ export default async function seedAccountTreeIfEmpty(
   try {
     const finalAccounts: Record<string, Account> = {};
 
-    for (const node of accountTree) {
-      if (node.final_account) {
-        const account = accountRepo.create({
-          name: node.name,
-          name_en: node.name_en,
-          accountType: node.accountType,
-          isConfig: node.isConfig ?? false,
-          final_account: true,
-          isParent: node.isParent ?? false,
-          userId:userId,
-          branchId:branchId
-        });
-        await queryRunner.manager.save(account);
-        finalAccounts[node.name] = account;
-      }
+    const finalAccountsToCreate = [
+      { name: 'الميزانية', name_en: 'Balance Sheet', accountType: 'BalanceSheet' },
+      { name: 'الأرباح والخسائر', name_en: 'Profit and Loss', accountType: 'ProfitLoss' },
+      { name: 'المتاجرة', name_en: 'Trading Account', accountType: 'TradingAccount' },
+      { name: 'التشغيل', name_en: 'Operating Account', accountType: 'OperatingAccount' }
+    ];
+
+    for (const accountData of finalAccountsToCreate) {
+      const account = accountRepo.create({
+        ...accountData,
+        isConfig: true,
+        final_account: true,
+        isParent: true,
+        userId,
+        branchId
+      });
+      await queryRunner.manager.save(account);
+      finalAccounts[accountData.name] = account;
     }
 
-    async function processNode(parentId: number | null, node: AccountNode): Promise<Account> {
-      if (node.final_account) {
-        return finalAccounts[node.name];
-      }
+    await queryRunner.manager.save(
+      finalParentRepo.create({
+        finalId: finalAccounts['الأرباح والخسائر'].id,
+        childId: finalAccounts['المتاجرة'].id
+      })
+    );
 
+    await queryRunner.manager.save(
+      finalParentRepo.create({
+        finalId: finalAccounts['الميزانية'].id,
+        childId: finalAccounts['الأرباح والخسائر'].id
+      })
+    );
+
+    await queryRunner.manager.save(
+      finalParentRepo.create({
+        finalId: finalAccounts['الميزانية'].id,
+        childId: finalAccounts['التشغيل'].id
+      })
+    );
+
+    async function processNode(parentId: number | null, node: AccountNode): Promise<Account> {
       const account = accountRepo.create({
         name: node.name,
         name_en: node.name_en,
@@ -354,20 +487,20 @@ export default async function seedAccountTreeIfEmpty(
 
       let finalAccount: Account | undefined;
       switch (node.accountType) {
-        case 'asset':
-        case 'liability':
-        case 'Inventory':
-          finalAccount = finalAccounts['الميزانية'];
+        case 'NetPurchases':
+        case 'NetSales':
+          finalAccount = finalAccounts['المتاجرة'];
           break;
         case 'expense':
         case 'revenue':
           finalAccount = finalAccounts['الأرباح والخسائر'];
           break;
-        case 'NetPurchases':
-        case 'NetSales':
-          finalAccount = finalAccounts['المتاجرة'];
+        case 'asset':
+        case 'liability':
+        case 'Inventory':
+          finalAccount = finalAccounts['الميزانية'];
           break;
-        case 'operating':
+        case 'OperatingAccount':
           finalAccount = finalAccounts['التشغيل'];
           break;
       }
@@ -378,7 +511,7 @@ export default async function seedAccountTreeIfEmpty(
             finalId: finalAccount.id,
             childId: account.id
           })
-        ); 
+        );
       }
 
       if (node.children?.length) {
@@ -397,10 +530,10 @@ export default async function seedAccountTreeIfEmpty(
     }
 
     await queryRunner.commitTransaction();
-    console.log('Create Accout Tree Successfly');
+    console.log("Create Account Tree");
   } catch (error) {
     await queryRunner.rollbackTransaction();
-    console.error('Feild Create Account Tree', error);
+    console.error('Faild Create Account Tree:', error);
     throw error;
   } finally {
     await queryRunner.release();

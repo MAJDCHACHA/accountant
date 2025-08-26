@@ -23,11 +23,11 @@ export const AppDataSource = new DataSource({
   synchronize: true, 
   logging: false,
   entities: [Branch,User, Account, JournalEntry, JournalEntryDetail,AccountRelation,Product,CompanyName,Invoice,InvoiceDetails,AccountFinalParent],
-  extra: {
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  },
+  // extra: {
+  //   ssl: {
+  //     rejectUnauthorized: false,
+  //   },
+  // },
 });
 
 export const connectToDatabase = async (): Promise<void> => {
